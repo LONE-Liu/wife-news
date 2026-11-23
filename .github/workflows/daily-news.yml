@@ -1,0 +1,55 @@
+name: daily-news
+
+on:
+  schedule:
+    # 04:00 UTC = 12:00 北京时间
+    - cron: "0 4 * * *"
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+jobs:
+  push:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install edge-tts
+        run: pip install --quiet edge-tts
+
+      - name: Fetch + translate + build voice
+        env:
+          DEEPSEEK_API_KEY: ${{ secrets.DEEPSEEK_API_KEY }}
+          JSONBIN_KEY: ${{ secrets.JSONBIN_KEY }}
+          JSONBIN_BIN_ID: ${{ secrets.JSONBIN_BIN_ID }}
+        run: python scripts/daily_news.py --out brief.md --site site
+
+      - name: Upload page
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: site
+
+      - name: Deploy page
+        id: deploy
+        uses: actions/deploy-pages@v4
+
+      - name: Push to WeChat
+        env:
+          SCT_KEY: ${{ secrets.SCT_KEY }}
+        run: python scripts/daily_news.py --send brief.md
+
+      - name: Upload brief as artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: daily-news
+          path: brief.md
+          if-no-files-found: ignore
+          retention-days: 7
