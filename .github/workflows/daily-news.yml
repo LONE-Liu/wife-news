@@ -2,8 +2,8 @@ name: daily-news
 
 on:
   schedule:
-    # 04:00 UTC = 12:00 北京时间
-    - cron: "0 4 * * *"
+    # 20:00 UTC，补偿约 8 小时延迟 → 实际约 12:00 北京时间
+    - cron: "0 20 * * *"
   workflow_dispatch: {}
 
 permissions:
